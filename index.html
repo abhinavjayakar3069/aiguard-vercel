@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AI-Guard Pro — Real-Time Login Audit</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0e1117; color: #fafafa; margin: 0; padding: 40px; }
+  h1 { font-size: 1.6rem; }
+  .layout { display: flex; gap: 40px; margin-top: 24px; flex-wrap: wrap; }
+  .panel { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .login-panel { flex: 0 0 320px; }
+  .log-panel { flex: 1; min-width: 400px; }
+  label { display: block; margin-top: 14px; margin-bottom: 4px; font-size: 0.9rem; color: #ccc; }
+  input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #30363d; background: #0e1117; color: #fafafa; box-sizing: border-box; }
+  button { margin-top: 18px; width: 100%; padding: 10px; border-radius: 6px; border: none; background: #ff4b4b; color: white; font-weight: 600; cursor: pointer; }
+  button:hover { background: #e03e3e; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+  th, td { border-bottom: 1px solid #30363d; padding: 6px 8px; text-align: left; }
+  .Safe { color: #3fb950; }
+  .Suspicious { color: #f0883e; }
+  .Blocked { font-weight: 700; color: #f85149; }
+  .Warning { color: #d29922; }
+  .Authorized { color: #3fb950; }
+</style>
+</head>
+<body>
+
+<h1>🛡️ AI-Guard: Real-Time Login Audit</h1>
+
+<div class="layout">
+  <div class="panel login-panel">
+    <h3>Simulate Login</h3>
+    <label for="ip">Source IP</label>
+    <input id="ip" value="192.168.1.10" />
+
+    <label for="pwd">Password</label>
+    <input id="pwd" type="password" />
+
+    <button onclick="attemptLogin()">Login</button>
+  </div>
+
+  <div class="panel log-panel">
+    <h3>Live Threat &amp; Audit Log</h3>
+    <table id="logTable">
+      <thead>
+        <tr><th>Timestamp</th><th>Source IP</th><th>Attempt Type</th><th>Status</th><th>Action</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const logs = [];
+  const failedCounts = {};
+
+  async function attemptLogin() {
+    const ip = document.getElementById('ip').value || 'unknown';
+    const pwd = document.getElementById('pwd').value;
+    const failed_count = failedCounts[ip] || 0;
+
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip, password: pwd, failed_count })
+    });
+    const result = await res.json();
+
+    const timestamp = new Date().toLocaleTimeString();
+    logs.unshift({ timestamp, ip, ...result });
+
+    if (result.attempt_type === 'Failed') {
+      failedCounts[ip] = failed_count + 1;
+    } else {
+      failedCounts[ip] = 0;
+    }
+
+    renderLogs();
+    document.getElementById('pwd').value = '';
+  }
+
+  function renderLogs() {
+    const tbody = document.querySelector('#logTable tbody');
+    tbody.innerHTML = '';
+    for (const log of logs) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${log.timestamp}</td>
+        <td>${log.ip}</td>
+        <td>${log.attempt_type}</td>
+        <td class="${log.status}">${log.status}</td>
+        <td class="${log.action}">${log.action}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+</script>
+
+</body>
+</html>

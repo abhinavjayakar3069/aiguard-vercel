@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/login.py": {
+      "runtime": "python3.9"
+    }
+  }
+}
